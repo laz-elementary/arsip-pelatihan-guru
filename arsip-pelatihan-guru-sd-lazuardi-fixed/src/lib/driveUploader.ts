@@ -104,8 +104,11 @@ export async function uploadFileToDriveOnly(
   file: File,
   fileType: 'certificate' | 'material',
   uploadId: string,
-  onProgress?: (progressPercent: number) => void
+  onProgress?: (progressPercent: number) => void,
+  customFileName?: string
 ): Promise<DriveUploadStepResult> {
+  const fileNameForDrive = customFileName?.trim() || file.name;
+
   // 1. Client-side preliminary validation
   const ext = ('.' + file.name.split('.').pop()).toLowerCase();
 
@@ -134,7 +137,7 @@ export async function uploadFileToDriveOnly(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      fileName: file.name,
+      fileName: fileNameForDrive,
       mimeType: file.type || 'application/octet-stream',
       fileSize: file.size,
       fileType,
