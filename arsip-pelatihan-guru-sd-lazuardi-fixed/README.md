@@ -1,3 +1,4 @@
+Trigger deployment setelah pengaturan Root Directory.
 Project Arsip Pelatihan Guru SD
 
 # Arsip Pelatihan Guru SD Lazuardi
