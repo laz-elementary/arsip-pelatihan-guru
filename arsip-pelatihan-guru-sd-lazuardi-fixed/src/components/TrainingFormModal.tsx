@@ -85,6 +85,29 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     'Leadership & Manajerial',
   ];
 
+
+  const sanitizeFileNamePart = (value: string) =>
+    value
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, '-')
+      .replace(/\s+/g, ' ')
+      .replace(/-+/g, '-')
+      .replace(/^[.\s-]+|[.\s-]+$/g, '')
+      .slice(0, 90);
+
+  const getFileExtension = (fileName: string) => {
+    const lastDot = fileName.lastIndexOf('.');
+    return lastDot > 0 ? fileName.slice(lastDot).toLowerCase() : '';
+  };
+
+  const buildDriveFileName = (file: File, fileType: 'certificate' | 'material') => {
+    const participantName = sanitizeFileNamePart(teacherName) || 'Tanpa Nama';
+    const title = sanitizeFileNamePart(trainingName) || 'Pelatihan';
+    const label = fileType === 'certificate' ? 'Sertifikat' : 'Bahan Materi';
+    const extension = getFileExtension(file.name);
+    return `${participantName} - ${title} - ${label}${extension}`;
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -239,9 +262,10 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     }
   };
 
-  const doSaveCertMetadata = async (targetFileId?: string, targetWebViewLink?: string) => {
+  const doSaveCertMetadata = async (targetFileId?: string, targetWebViewLink?: string, targetFileName?: string) => {
     const activeFileId = targetFileId || certFileId;
     const activeWebViewLink = targetWebViewLink || certWebViewLink || certificateDriveUrl;
+    const activeFileName = targetFileName || certFileName || (certFile ? buildDriveFileName(certFile, 'certificate') : 'Sertifikat.pdf');
 
     if (!activeFileId) {
       setCertErrorMessage('ID file sertifikat belum tersedia di Google Drive.');
@@ -255,7 +279,7 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     try {
       const metaRes = await saveFileMetadataToSupabase({
         fileId: activeFileId,
-        fileName: certFileName || (certFile ? certFile.name : 'Sertifikat.pdf'),
+        fileName: activeFileName,
         mimeType: certMimeType || certFile?.type || 'application/pdf',
         fileSize: certFileSize || certFile?.size || 0,
         fileType: 'certificate',
@@ -295,6 +319,16 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
       return certWebViewLink || certificateDriveUrl;
     }
 
+    if (!teacherName.trim() || !trainingName.trim()) {
+      const message = 'Isi Nama Guru/Pegawai dan Nama Pelatihan terlebih dahulu agar nama file sertifikat dapat dibuat otomatis.';
+      setCertErrorMessage(message);
+      setCertStage('upload_failed');
+      throw new Error(message);
+    }
+
+    const targetFileName = buildDriveFileName(certFile, 'certificate');
+    setCertFileName(targetFileName);
+    setCertificateFileName(targetFileName);
     setCertStage('uploading_drive');
     setCertProgress(0);
     setCertErrorMessage('');
@@ -305,17 +339,18 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
         certFile,
         'certificate',
         certUploadId,
-        (percent) => setCertProgress(percent)
+        (percent) => setCertProgress(percent),
+        targetFileName
       );
 
       setCertFileId(driveRes.fileId);
       setCertWebViewLink(driveRes.webViewLink);
       setCertificateDriveUrl(driveRes.webViewLink);
-      setCertificateFileName(certFile.name);
+      setCertificateFileName(targetFileName);
       setCertStage('drive_uploaded');
 
       // Step 2: Save metadata to Supabase
-      await doSaveCertMetadata(driveRes.fileId, driveRes.webViewLink);
+      await doSaveCertMetadata(driveRes.fileId, driveRes.webViewLink, targetFileName);
       return driveRes.webViewLink;
     } catch (error: any) {
       setCertStage('upload_failed');
@@ -353,9 +388,10 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     }
   };
 
-  const doSaveMatMetadata = async (targetFileId?: string, targetWebViewLink?: string) => {
+  const doSaveMatMetadata = async (targetFileId?: string, targetWebViewLink?: string, targetFileName?: string) => {
     const activeFileId = targetFileId || matFileId;
     const activeWebViewLink = targetWebViewLink || matWebViewLink || materialDriveUrl;
+    const activeFileName = targetFileName || matFileName || (matFile ? buildDriveFileName(matFile, 'material') : 'Bahan_Materi.pdf');
 
     if (!activeFileId) {
       setMatErrorMessage('ID file materi belum tersedia di Google Drive.');
@@ -369,7 +405,7 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     try {
       const metaRes = await saveFileMetadataToSupabase({
         fileId: activeFileId,
-        fileName: matFileName || (matFile ? matFile.name : 'Bahan_Materi.pdf'),
+        fileName: activeFileName,
         mimeType: matMimeType || matFile?.type || 'application/pdf',
         fileSize: matFileSize || matFile?.size || 0,
         fileType: 'material',
@@ -409,6 +445,16 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
       return matWebViewLink || materialDriveUrl;
     }
 
+    if (!teacherName.trim() || !trainingName.trim()) {
+      const message = 'Isi Nama Guru/Pegawai dan Nama Pelatihan terlebih dahulu agar nama file bahan materi dapat dibuat otomatis.';
+      setMatErrorMessage(message);
+      setMatStage('upload_failed');
+      throw new Error(message);
+    }
+
+    const targetFileName = buildDriveFileName(matFile, 'material');
+    setMatFileName(targetFileName);
+    setMaterialFileName(targetFileName);
     setMatStage('uploading_drive');
     setMatProgress(0);
     setMatErrorMessage('');
@@ -419,17 +465,18 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
         matFile,
         'material',
         matUploadId,
-        (percent) => setMatProgress(percent)
+        (percent) => setMatProgress(percent),
+        targetFileName
       );
 
       setMatFileId(driveRes.fileId);
       setMatWebViewLink(driveRes.webViewLink);
       setMaterialDriveUrl(driveRes.webViewLink);
-      setMaterialFileName(matFile.name);
+      setMaterialFileName(targetFileName);
       setMatStage('drive_uploaded');
 
       // Step 2: Save metadata to Supabase
-      await doSaveMatMetadata(driveRes.fileId, driveRes.webViewLink);
+      await doSaveMatMetadata(driveRes.fileId, driveRes.webViewLink, targetFileName);
       return driveRes.webViewLink;
     } catch (error: any) {
       setMatStage('upload_failed');
@@ -505,9 +552,9 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
         location: location || 'SD Lazuardi',
         notes,
         certificateDriveUrl: finalCertUrl,
-        certificateFileName: certificateFileName || (certFile ? certFile.name : 'Sertifikat_Pelatihan.pdf'),
+        certificateFileName: certificateFileName || (certFile ? buildDriveFileName(certFile, 'certificate') : 'Sertifikat_Pelatihan.pdf'),
         materialDriveUrl: finalMatUrl,
-        materialFileName: materialFileName || (matFile ? matFile.name : 'Bahan_Materi.pdf'),
+        materialFileName: materialFileName || (matFile ? buildDriveFileName(matFile, 'material') : 'Bahan_Materi.pdf'),
       });
       onClose();
     } catch (error: any) {
@@ -754,6 +801,9 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
                     <span className="font-semibold truncate max-w-[240px]">{certFile.name}</span>
                     <span className="text-[#7A756D] font-mono">{(certFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                   </div>
+                  <p className="text-[11px] text-[#5F6B5B] break-words">
+                    Nama di Google Drive: <span className="font-semibold">{certStage === 'idle' || certStage === 'upload_failed' ? buildDriveFileName(certFile, 'certificate') : certFileName}</span>
+                  </p>
 
                   <button
                     type="button"
@@ -879,6 +929,9 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
                     <span className="font-semibold truncate max-w-[240px]">{matFile.name}</span>
                     <span className="text-[#7A756D] font-mono">{(matFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                   </div>
+                  <p className="text-[11px] text-[#6F5A19] break-words">
+                    Nama di Google Drive: <span className="font-semibold">{matStage === 'idle' || matStage === 'upload_failed' ? buildDriveFileName(matFile, 'material') : matFileName}</span>
+                  </p>
 
                   <button
                     type="button"
