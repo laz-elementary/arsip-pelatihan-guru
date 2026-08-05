@@ -71,6 +71,7 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
 
   // New Teacher Inline Toggle
   const [isAddingNewTeacher, setIsAddingNewTeacher] = useState(false);
+  const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
   const [isSavingArchive, setIsSavingArchive] = useState(false);
   const [configStatus, setConfigStatus] = useState<{ configured: boolean; details?: any } | null>(null);
 
@@ -94,6 +95,7 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
       .catch(() => setConfigStatus(null));
 
     setIsSavingArchive(false);
+    setIsTeacherDropdownOpen(false);
 
     // Reset certificate upload state
     setCertFile(null);
@@ -150,11 +152,9 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
       setMaterialFileName(initialData.materialFileName || '');
       setIsAddingNewTeacher(false);
     } else {
-      const validTeachers = (teachers || []).filter(t => t && t.name);
-      const firstTeacher = validTeachers[0];
-      setTeacherId(firstTeacher?.id || '');
-      setTeacherName(firstTeacher?.name || '');
-      setTeacherRole(firstTeacher?.role || '');
+      setTeacherId('');
+      setTeacherName('');
+      setTeacherRole('');
       setTrainingName('');
       setOrganizer('Yayasan Lazuardi Hayati');
       setStartDate(new Date().toISOString().split('T')[0]);
@@ -174,23 +174,41 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleTeacherSelect = (id: string) => {
-    if (id === 'new') {
-      setIsAddingNewTeacher(true);
-      setTeacherId('new');
-      setTeacherName('');
-      setTeacherRole('');
-      return;
-    }
+  const handleTeacherNameChange = (value: string) => {
+    setTeacherName(value);
+    setIsTeacherDropdownOpen(Boolean(value.trim()));
 
-    setIsAddingNewTeacher(false);
-    const selected = teachers.find(t => t.id === id);
-    if (selected) {
-      setTeacherId(selected.id);
-      setTeacherName(selected.name);
-      setTeacherRole(selected.role);
+    const exactMatch = (teachers || []).find(
+      teacher => teacher?.name?.toLowerCase() === value.trim().toLowerCase()
+    );
+
+    if (exactMatch) {
+      setTeacherId(exactMatch.id);
+      setTeacherRole(exactMatch.role || '');
+      setIsAddingNewTeacher(false);
+    } else {
+      setTeacherId('new');
+      setTeacherRole('');
+      setIsAddingNewTeacher(Boolean(value.trim()));
     }
   };
+
+  const selectTeacher = (teacher: Teacher) => {
+    setTeacherId(teacher.id);
+    setTeacherName(teacher.name);
+    setTeacherRole(teacher.role || '');
+    setIsAddingNewTeacher(false);
+    setIsTeacherDropdownOpen(false);
+  };
+
+  const filteredTeachers = teacherName.trim()
+    ? (teachers || [])
+        .filter(teacher =>
+          teacher?.name?.toLowerCase().includes(teacherName.trim().toLowerCase())
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 12)
+    : [];
 
   // --- CERTIFICATE UPLOAD FLOW ---
   const handleFileChangeCert = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -546,46 +564,46 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-semibold text-[#2C3327] mb-1">Nama Guru / Pegawai *</label>
-                {!isAddingNewTeacher ? (
-                  <select
-                    value={teacherId}
-                    onChange={e => handleTeacherSelect(e.target.value)}
-                    required
-                    className="w-full p-2.5 bg-white border border-[#D9D5CB] rounded-xl text-xs font-medium text-[#2C3327] focus:ring-2 focus:ring-[#1c59c6] focus:outline-hidden"
-                  >
-                    <option value="" disabled>-- Pilih dari Daftar Nama Guru / Karyawan --</option>
-                    {(teachers || []).filter(t => t && t.name).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                    <option value="new">✏️ + Tulis Nama Sendiri / Tambah Guru Baru...</option>
-                  </select>
-                ) : (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Ketik Nama Lengkap beserta Gelar..."
-                      value={teacherName}
-                      onChange={e => setTeacherName(e.target.value)}
-                      required
-                      className="w-full p-2.5 bg-white border border-[#1c59c6] rounded-xl text-xs text-[#2C3327] focus:ring-2 focus:ring-[#1c59c6]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAddingNewTeacher(false);
-                        const first = teachers[0];
-                        if (first) {
-                          setTeacherId(first.id);
-                          setTeacherName(first.name);
-                          setTeacherRole(first.role);
-                        }
-                      }}
-                      className="text-[11px] text-[#1c59c6] font-medium hover:underline flex items-center gap-1"
-                    >
-                      ← Pilih dari daftar guru yang ada
-                    </button>
+                <input
+                  type="text"
+                  placeholder="Ketik nama guru / pegawai..."
+                  value={teacherName}
+                  onChange={e => handleTeacherNameChange(e.target.value)}
+                  onFocus={() => setIsTeacherDropdownOpen(Boolean(teacherName.trim()))}
+                  onBlur={() => window.setTimeout(() => setIsTeacherDropdownOpen(false), 150)}
+                  autoComplete="off"
+                  required
+                  className="w-full p-2.5 bg-white border border-[#D9D5CB] rounded-xl text-xs font-medium text-[#2C3327] focus:ring-2 focus:ring-[#1c59c6] focus:outline-hidden"
+                />
+
+                {isTeacherDropdownOpen && (
+                  <div className="absolute z-30 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-[#D9D5CB] bg-white shadow-xl">
+                    {filteredTeachers.length > 0 ? (
+                      filteredTeachers.map(teacher => (
+                        <button
+                          key={teacher.id}
+                          type="button"
+                          onMouseDown={event => {
+                            event.preventDefault();
+                            selectTeacher(teacher);
+                          }}
+                          className="w-full px-3 py-2.5 text-left text-xs text-[#2C3327] hover:bg-[#EDF3FC] border-b border-[#F0EEE8] last:border-b-0"
+                        >
+                          <span className="block font-semibold">{teacher.name}</span>
+                          {(teacher.role || teacher.nip) && (
+                            <span className="block mt-0.5 text-[10px] text-[#7A756D]">
+                              {[teacher.role, teacher.nip].filter(Boolean).join(' • ')}
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2.5 text-[11px] text-[#7A756D]">
+                        Nama tidak ditemukan. Nama yang diketik akan disimpan sebagai pegawai baru.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
