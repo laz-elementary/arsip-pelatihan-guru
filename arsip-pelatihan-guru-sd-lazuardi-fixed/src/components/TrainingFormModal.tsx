@@ -592,9 +592,9 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
                           className="w-full px-3 py-2.5 text-left text-xs text-[#2C3327] hover:bg-[#EDF3FC] border-b border-[#F0EEE8] last:border-b-0"
                         >
                           <span className="block font-semibold">{teacher.name}</span>
-                          {(teacher.role || teacher.nip) && (
+                          {teacher.role && (
                             <span className="block mt-0.5 text-[10px] text-[#7A756D]">
-                              {[teacher.role, teacher.nip].filter(Boolean).join(' • ')}
+                              {teacher.role}
                             </span>
                           )}
                         </button>
