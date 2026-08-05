@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   X, Calendar, ExternalLink, BookOpen,
-  FolderCheck, FileText, UserCheck, MapPin
+  FolderCheck, FileText, UserCheck, MapPin, Wifi
 } from 'lucide-react';
 import { TrainingRecord, DRIVE_FOLDERS } from '../types';
 
@@ -16,6 +16,14 @@ export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
   onClose,
 }) => {
   if (!record) return null;
+
+  const rawLocation = (record.location || '').trim();
+  const isOnline = /^(online)(?:\s*[-–—:]\s*)?/i.test(rawLocation)
+    || (!/^(offline)(?:\s*[-–—:]\s*)?/i.test(rawLocation)
+      && /(zoom|google\s*meet|microsoft\s*teams|webinar|daring|online)/i.test(rawLocation));
+  const locationDetail = rawLocation
+    .replace(/^(online|offline)(?:\s*[-–—:]\s*)?/i, '')
+    .trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2C3327]/60 backdrop-blur-xs p-4 overflow-y-auto">
@@ -46,7 +54,7 @@ export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
         {/* Content Body */}
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
           {/* Details Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#FAF9F6] p-4 rounded-2xl border border-[#E5E2D9] text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#FAF9F6] p-4 rounded-2xl border border-[#E5E2D9] text-xs">
             <div>
               <span className="text-[#7A756D] font-medium block mb-0.5">Penyelenggara</span>
               <span className="font-bold text-[#2C3327] flex items-center gap-1">
@@ -60,9 +68,27 @@ export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
               </span>
             </div>
             <div>
-              <span className="text-[#7A756D] font-medium block mb-0.5">Lokasi Kegiatan</span>
+              <span className="text-[#7A756D] font-medium block mb-0.5">Metode</span>
               <span className="font-bold text-[#2C3327] flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#B8860B]" /> {record.location || 'SD Lazuardi'}
+                {isOnline ? (
+                  <Wifi className="w-3.5 h-3.5 text-[#1c59c6]" />
+                ) : (
+                  <MapPin className="w-3.5 h-3.5 text-[#B8860B]" />
+                )}
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
+            <div>
+              <span className="text-[#7A756D] font-medium block mb-0.5">
+                {isOnline ? 'Platform / Media' : 'Lokasi Kegiatan'}
+              </span>
+              <span className="font-bold text-[#2C3327] flex items-center gap-1">
+                {isOnline ? (
+                  <Wifi className="w-3.5 h-3.5 text-[#1c59c6]" />
+                ) : (
+                  <MapPin className="w-3.5 h-3.5 text-[#B8860B]" />
+                )}
+                {locationDetail || (isOnline ? 'Online' : 'Belum dicantumkan')}
               </span>
             </div>
           </div>
