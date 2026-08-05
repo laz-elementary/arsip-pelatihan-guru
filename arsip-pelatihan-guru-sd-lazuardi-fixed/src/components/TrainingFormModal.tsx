@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, ExternalLink, FolderCheck, BookOpen, 
-  CheckCircle2, AlertCircle, Loader2, CloudUpload, FileCheck, RefreshCw
+  CheckCircle2, AlertCircle, Loader2, CloudUpload, FileCheck, RefreshCw,
+  MapPin, Wifi
 } from 'lucide-react';
 import { TrainingRecord, Teacher } from '../types';
 import { 
@@ -38,7 +39,8 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
   const [hours, setHours] = useState<number>(16);
   const [category, setCategory] = useState<string>('Pedagogik');
   const [customCategory, setCustomCategory] = useState<string>('');
-  const [location, setLocation] = useState('SD Lazuardi');
+  const [trainingMode, setTrainingMode] = useState<'Offline' | 'Online'>('Offline');
+  const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
 
   // Certificate Upload State Machine
@@ -84,6 +86,37 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     'Pengembangan Karakter & Islam',
     'Leadership & Manajerial',
   ];
+
+  const parseStoredLocation = (storedLocation?: string) => {
+    const value = (storedLocation || '').trim();
+    const onlinePattern = /^(online)(?:\s*[-–—:]\s*)?/i;
+    const offlinePattern = /^(offline)(?:\s*[-–—:]\s*)?/i;
+
+    if (onlinePattern.test(value)) {
+      return {
+        mode: 'Online' as const,
+        detail: value.replace(onlinePattern, '').trim(),
+      };
+    }
+
+    if (offlinePattern.test(value)) {
+      return {
+        mode: 'Offline' as const,
+        detail: value.replace(offlinePattern, '').trim(),
+      };
+    }
+
+    const looksOnline = /(zoom|google\s*meet|microsoft\s*teams|webinar|daring|online)/i.test(value);
+    return {
+      mode: looksOnline ? ('Online' as const) : ('Offline' as const),
+      detail: value,
+    };
+  };
+
+  const formatStoredLocation = (mode: 'Offline' | 'Online', detail: string) => {
+    const cleanDetail = detail.trim();
+    return cleanDetail ? `${mode} - ${cleanDetail}` : mode;
+  };
 
 
   const sanitizeFileNamePart = (value: string) =>
@@ -165,7 +198,9 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
         setCustomCategory(catVal);
       }
 
-      setLocation(initialData.location || 'SD Lazuardi');
+      const parsedLocation = parseStoredLocation(initialData.location);
+      setTrainingMode(parsedLocation.mode);
+      setLocation(parsedLocation.detail);
       setNotes(initialData.notes || '');
       
       setCertificateDriveUrl(initialData.certificateDriveUrl || '');
@@ -185,7 +220,8 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
       setHours(16);
       setCategory('Pedagogik');
       setCustomCategory('');
-      setLocation('SD Lazuardi');
+      setTrainingMode('Offline');
+      setLocation('');
       setNotes('');
       setCertificateDriveUrl('');
       setCertificateFileName('');
@@ -549,7 +585,7 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
         endDate: endDate || startDate,
         hours: Number(hours) || 8,
         category: finalCategory,
-        location: location || 'SD Lazuardi',
+        location: formatStoredLocation(trainingMode, location),
         notes,
         certificateDriveUrl: finalCertUrl,
         certificateFileName: certificateFileName || (certFile ? buildDriveFileName(certFile, 'certificate') : 'Sertifikat_Pelatihan.pdf'),
@@ -729,6 +765,47 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
                     />
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#2C3327] mb-1">Metode Pelatihan *</label>
+                <select
+                  value={trainingMode}
+                  onChange={e => {
+                    setTrainingMode(e.target.value as 'Offline' | 'Online');
+                    setLocation('');
+                  }}
+                  className="w-full p-2.5 bg-white border border-[#D9D5CB] rounded-xl text-xs font-medium text-[#2C3327] focus:ring-2 focus:ring-[#1c59c6]"
+                  required
+                >
+                  <option value="Offline">Offline / Tatap Muka</option>
+                  <option value="Online">Online / Daring</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#2C3327] mb-1 flex items-center gap-1.5">
+                  {trainingMode === 'Online' ? (
+                    <Wifi className="w-3.5 h-3.5 text-[#1c59c6]" />
+                  ) : (
+                    <MapPin className="w-3.5 h-3.5 text-[#B8860B]" />
+                  )}
+                  <span>{trainingMode === 'Online' ? 'Platform / Media Online' : 'Lokasi Pelatihan'}</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    trainingMode === 'Online'
+                      ? 'misal: Zoom Meeting / Google Meet / Webinar'
+                      : 'misal: SD Lazuardi / Hotel / Gedung Pelatihan'
+                  }
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  required
+                  className="w-full p-2.5 bg-white border border-[#D9D5CB] rounded-xl text-xs text-[#2C3327] focus:ring-2 focus:ring-[#1c59c6]"
+                />
               </div>
             </div>
 
