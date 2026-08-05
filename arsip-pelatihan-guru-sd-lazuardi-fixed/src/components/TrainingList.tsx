@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, Filter, Calendar, Award, BookOpen, ExternalLink, 
   Trash2, Edit3, Eye, FileText, CheckCircle2, UserCheck, 
-  FolderCheck, Sparkles
+  FolderCheck, Sparkles, MapPin, Wifi
 } from 'lucide-react';
 import { TrainingRecord, FilterOptions, DRIVE_FOLDERS } from '../types';
 
@@ -33,6 +33,19 @@ export const TrainingList: React.FC<TrainingListProps> = ({
 
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
+  const getLocationInfo = (storedLocation?: string) => {
+    const raw = (storedLocation || '').trim();
+    const onlinePrefix = /^(online)(?:\s*[-–—:]\s*)?/i;
+    const offlinePrefix = /^(offline)(?:\s*[-–—:]\s*)?/i;
+    const isOnline = onlinePrefix.test(raw)
+      || (!offlinePrefix.test(raw) && /(zoom|google\s*meet|microsoft\s*teams|webinar|daring|online)/i.test(raw));
+
+    return {
+      isOnline,
+      detail: raw.replace(/^(online|offline)(?:\s*[-–—:]\s*)?/i, '').trim(),
+    };
+  };
+
   // Sync prop if changed from dashboard
   React.useEffect(() => {
     if (selectedCategoryFromDash) {
@@ -51,11 +64,13 @@ export const TrainingList: React.FC<TrainingListProps> = ({
     const tcName = item.teacherName || '';
     const org = item.organizer || '';
     const note = item.notes || '';
+    const location = item.location || '';
 
     const matchesSearch = 
       tName.toLowerCase().includes(searchLower) ||
       tcName.toLowerCase().includes(searchLower) ||
       org.toLowerCase().includes(searchLower) ||
+      location.toLowerCase().includes(searchLower) ||
       note.toLowerCase().includes(searchLower);
 
     const matchesCategory = filters.category === 'Semua' || item.category === filters.category;
@@ -244,6 +259,22 @@ export const TrainingList: React.FC<TrainingListProps> = ({
                     <Calendar className="w-3.5 h-3.5 text-[#1c59c6]" />
                     <span>{item.startDate} {item.endDate && item.endDate !== item.startDate ? `s/d ${item.endDate}` : ''}</span>
                   </p>
+                  {(() => {
+                    const locationInfo = getLocationInfo(item.location);
+                    return (
+                      <p className="flex items-center gap-1.5">
+                        {locationInfo.isOnline ? (
+                          <Wifi className="w-3.5 h-3.5 text-[#1c59c6]" />
+                        ) : (
+                          <MapPin className="w-3.5 h-3.5 text-[#B8860B]" />
+                        )}
+                        <span className="truncate">
+                          {locationInfo.isOnline ? 'Online' : 'Offline'}
+                          {locationInfo.detail ? ` - ${locationInfo.detail}` : ''}
+                        </span>
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -281,7 +312,7 @@ export const TrainingList: React.FC<TrainingListProps> = ({
                     className="flex-1 py-1.5 px-3 bg-[#1c59c6] hover:bg-[#1547a1] text-white rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Detail & Rencana Aksi AI</span>
+                    <span>Lihat Detail</span>
                   </button>
 
                   <div className="flex items-center ml-2 space-x-1">
@@ -320,6 +351,7 @@ export const TrainingList: React.FC<TrainingListProps> = ({
                   <th className="py-3 px-4">Judul Pelatihan</th>
                   <th className="py-3 px-4">Penyelenggara</th>
                   <th className="py-3 px-4">Tanggal</th>
+                  <th className="py-3 px-4">Metode & Lokasi</th>
                   <th className="py-3 px-4">Kategori</th>
                   <th className="py-3 px-4">JP</th>
                   <th className="py-3 px-4 text-center">Drive Links</th>
@@ -342,6 +374,24 @@ export const TrainingList: React.FC<TrainingListProps> = ({
                     </td>
                     <td className="py-3 px-4 text-[#7A756D]">{item.organizer}</td>
                     <td className="py-3 px-4 font-mono text-[#7A756D]">{item.startDate}</td>
+                    <td className="py-3 px-4">
+                      {(() => {
+                        const locationInfo = getLocationInfo(item.location);
+                        return (
+                          <div className="flex items-center gap-1.5 text-[#7A756D]">
+                            {locationInfo.isOnline ? (
+                              <Wifi className="w-3.5 h-3.5 text-[#1c59c6]" />
+                            ) : (
+                              <MapPin className="w-3.5 h-3.5 text-[#B8860B]" />
+                            )}
+                            <span>
+                              {locationInfo.isOnline ? 'Online' : 'Offline'}
+                              {locationInfo.detail ? ` - ${locationInfo.detail}` : ''}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="py-3 px-4">
                       <span className="bg-[#edf3fc] text-[#1c59c6] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#d2e3fc]">
                         {item.category}
