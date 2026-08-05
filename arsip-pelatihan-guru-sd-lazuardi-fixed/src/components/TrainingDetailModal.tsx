@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  X, Calendar, Award, ExternalLink, Sparkles, BookOpen, 
-  FolderCheck, CheckCircle2, FileText, UserCheck, MapPin, 
-  RefreshCw, Check, Lightbulb 
+  X, Calendar, ExternalLink, BookOpen,
+  FolderCheck, FileText, UserCheck, MapPin
 } from 'lucide-react';
 import { TrainingRecord, DRIVE_FOLDERS } from '../types';
 
@@ -15,63 +14,8 @@ interface TrainingDetailModalProps {
 export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
   record,
   onClose,
-  onUpdateRecordAiPlan,
 }) => {
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
-  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
-  const [isLoadingRecs, setIsLoadingRecs] = useState(false);
-
   if (!record) return null;
-
-  // Generate Gemini AI Action Plan for Classroom Implementation
-  const handleGenerateAiPlan = async () => {
-    setIsGeneratingAi(true);
-    try {
-      const res = await fetch('/api/generate-ai-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          trainingName: record.trainingName,
-          notes: record.notes,
-          teacherRole: record.teacherRole,
-          category: record.category,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.summary && data.actionPlan) {
-        onUpdateRecordAiPlan(record.id, data.summary, data.actionPlan);
-      }
-    } catch (err) {
-      console.error('Failed to generate AI plan:', err);
-    } finally {
-      setIsGeneratingAi(false);
-    }
-  };
-
-  // Generate Gemini AI Next Training Recommendations
-  const handleGetRecommendations = async () => {
-    setIsLoadingRecs(true);
-    try {
-      const res = await fetch('/api/recommend-trainings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teacherName: record.teacherName,
-          role: record.teacherRole,
-          completedTrainings: [record.trainingName],
-        }),
-      });
-      const data = await res.json();
-      if (data.recommendations) {
-        setAiRecommendations(data.recommendations);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoadingRecs(false);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2C3327]/60 backdrop-blur-xs p-4 overflow-y-auto">
@@ -234,90 +178,6 @@ export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
             </div>
           </div>
 
-          {/* AI Action Plan & Rencana Penerapan di SD Lazuardi */}
-          <div className="bg-[#0f2857] text-white p-5 rounded-2xl border border-[#1547a1] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-[#1c59c6]/40 rounded-xl text-[#93c5fd]">
-                  <Sparkles className="w-5 h-5 text-[#93c5fd]" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">Gemini AI: Rencana Aksi Kelas & Ringkasan</h4>
-                  <p className="text-[11px] text-[#bfdbfe]">Rekomendasi implementasi praktis di SD Lazuardi</p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleGenerateAiPlan}
-                disabled={isGeneratingAi}
-                className="px-3 py-1.5 bg-[#1c59c6] hover:bg-[#1547a1] disabled:bg-[#1e3a8a] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingAi ? 'animate-spin' : ''}`} />
-                <span>{isGeneratingAi ? 'Menganalisis AI...' : record.aiActionPlan ? 'Perbarui AI Plan' : 'Generate AI Plan'}</span>
-              </button>
-            </div>
-
-            {record.aiSummary && (
-              <div className="bg-white/10 p-3.5 rounded-xl text-xs text-[#e8f0fe] border border-white/10">
-                <strong className="text-white block mb-1">Ringkasan Eksekutif:</strong>
-                {record.aiSummary}
-              </div>
-            )}
-
-            {record.aiActionPlan && record.aiActionPlan.length > 0 && (
-              <div className="space-y-2">
-                <strong className="text-xs text-[#93c5fd] block">Tindakan Aksi Kelas (Action Items):</strong>
-                <ul className="space-y-2 text-xs text-[#D9D5CB]">
-                  {record.aiActionPlan.map((item, idx) => (
-                    <li key={idx} className="flex items-start space-x-2 bg-white/5 p-2.5 rounded-lg border border-white/5">
-                      <CheckCircle2 className="w-4 h-4 text-[#93c5fd] shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {!record.aiActionPlan && !isGeneratingAi && (
-              <p className="text-xs text-[#c0d4ff] italic">
-                Klik tombol "Generate AI Plan" untuk membuat rekomendasi penerapan materi pelatihan ini secara otomatis bagi guru SD Lazuardi.
-              </p>
-            )}
-          </div>
-
-          {/* AI Next Recommendations */}
-          <div className="bg-[#FAF9F6] p-4 rounded-2xl border border-[#E5E2D9]">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-xs font-bold text-[#2C3327] flex items-center gap-1.5">
-                <Lightbulb className="w-4 h-4 text-[#B8860B]" /> Rekomendasi Pelatihan Selanjutnya (CPD Guru)
-              </h4>
-              <button
-                onClick={handleGetRecommendations}
-                disabled={isLoadingRecs}
-                className="text-xs text-[#1c59c6] hover:underline font-bold"
-              >
-                {isLoadingRecs ? 'Memuat AI...' : 'Dapatkan Rekomendasi AI'}
-              </button>
-            </div>
-
-            {aiRecommendations.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {aiRecommendations.map((rec, i) => (
-                  <div key={i} className="bg-white p-3 rounded-xl border border-[#E5E2D9] text-xs">
-                    <span className="text-[10px] font-bold bg-[#F3E7C4] text-[#B8860B] px-2 py-0.5 rounded-md">
-                      {rec.category}
-                    </span>
-                    <h5 className="font-bold text-[#2C3327] mt-1">{rec.title}</h5>
-                    <p className="text-[11px] text-[#7A756D] mt-0.5">{rec.reason}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-[#7A756D]">
-                Klik "Dapatkan Rekomendasi AI" untuk melihat rekomendasi program pengembangan profesi guru berikutnya berdasarkan riwayat ini.
-              </p>
-            )}
-          </div>
         </div>
       </div>
     </div>
