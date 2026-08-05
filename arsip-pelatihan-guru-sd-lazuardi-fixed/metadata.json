@@ -1,0 +1,6 @@
+{
+  "name": "Arsip Pelatihan Guru SD Lazuardi",
+  "description": "Sistem arsip dan rekapitulasi pelatihan guru SD Lazuardi dengan integrasi sertifikat dan materi training.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
