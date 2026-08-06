@@ -293,16 +293,23 @@ export const TrainingList: React.FC<TrainingListProps> = ({
                     <span>Sertifikat Drive</span>
                   </a>
 
-                  <a
-                    href={item.materialDriveUrl || DRIVE_FOLDERS.MATERIALS}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center space-x-1.5 py-1.5 px-2 bg-[#FAF9F6] hover:bg-[#edf3fc] text-[#2C3327] rounded-lg font-semibold transition-colors border border-[#E5E2D9]"
-                    title="Buka Bahan Materi di Google Drive"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-[#1c59c6]" />
-                    <span>Materi Drive</span>
-                  </a>
+                  {item.materialDriveUrl ? (
+                    <a
+                      href={item.materialDriveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center space-x-1.5 py-1.5 px-2 bg-[#FAF9F6] hover:bg-[#edf3fc] text-[#2C3327] rounded-lg font-semibold transition-colors border border-[#E5E2D9]"
+                      title="Buka bahan materi"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-[#1c59c6]" />
+                      <span>Bahan Materi</span>
+                    </a>
+                  ) : (
+                    <span className="flex items-center justify-center space-x-1.5 py-1.5 px-2 bg-[#F2EFE9] text-[#AAA49A] rounded-lg font-semibold border border-[#E5E2D9]" title="Belum ada bahan materi">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>Belum Ada Materi</span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Main Modal Action Button */}
@@ -409,15 +416,21 @@ export const TrainingList: React.FC<TrainingListProps> = ({
                         >
                           <FolderCheck className="w-3.5 h-3.5 text-[#1c59c6]" /> Sertifikat
                         </a>
-                        <a
-                          href={item.materialDriveUrl || DRIVE_FOLDERS.MATERIALS}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 bg-[#FAF9F6] text-[#2C3327] hover:bg-[#edf3fc] rounded-md text-[10px] font-semibold flex items-center gap-1 border border-[#E5E2D9]"
-                          title="Bahan Materi Drive"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-[#1c59c6]" /> Materi
-                        </a>
+                        {item.materialDriveUrl ? (
+                          <a
+                            href={item.materialDriveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-[#FAF9F6] text-[#2C3327] hover:bg-[#edf3fc] rounded-md text-[10px] font-semibold flex items-center gap-1 border border-[#E5E2D9]"
+                            title="Buka bahan materi"
+                          >
+                            <BookOpen className="w-3.5 h-3.5 text-[#1c59c6]" /> Materi
+                          </a>
+                        ) : (
+                          <span className="p-1.5 bg-[#F2EFE9] text-[#AAA49A] rounded-md text-[10px] font-semibold flex items-center gap-1 border border-[#E5E2D9]" title="Belum ada bahan materi">
+                            <BookOpen className="w-3.5 h-3.5" /> Tidak Ada
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right">
