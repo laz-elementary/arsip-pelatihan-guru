@@ -215,7 +215,7 @@ export default function App() {
       'Lokasi': t.location,
       'Catatan & Ringkasan': t.notes || '',
       'Link Sertifikat Drive': t.certificateDriveUrl || DRIVE_FOLDERS.CERTIFICATES,
-      'Link Bahan Materi Drive': t.materialDriveUrl || DRIVE_FOLDERS.MATERIALS,
+      'Link Bahan Materi': t.materialDriveUrl || '',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -325,7 +325,7 @@ export default function App() {
         onAddTeacher={handleAddTeacher}
       />
 
-      {/* Detail & AI Plan Modal */}
+      {/* Detail Pelatihan Modal */}
       <TrainingDetailModal
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
