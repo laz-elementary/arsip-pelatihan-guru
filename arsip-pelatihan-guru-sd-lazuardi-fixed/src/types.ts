@@ -36,9 +36,9 @@ export interface TrainingRecord {
   certificateDriveUrl: string; // Drive link (defaults to the provided folder)
   certificateFileName?: string;
   
-  // Material file & Drive URL
+  // Material file or external link
   materialUrl?: string; // Direct link or preview URL
-  materialDriveUrl: string; // Drive link (defaults to the provided folder)
+  materialDriveUrl: string; // Google Drive file URL or external material link
   materialFileName?: string;
   
   // AI summary cache (optional)
