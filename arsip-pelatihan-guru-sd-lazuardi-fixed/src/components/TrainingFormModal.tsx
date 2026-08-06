@@ -118,6 +118,22 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     return cleanDetail ? `${mode} - ${cleanDetail}` : mode;
   };
 
+  const normalizeMaterialUrl = (value: string) => {
+    const cleanValue = value.trim();
+    if (!cleanValue) return '';
+    return /^https?:\/\//i.test(cleanValue) ? cleanValue : `https://${cleanValue}`;
+  };
+
+  const isValidMaterialUrl = (value: string) => {
+    if (!value) return true;
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
 
   const sanitizeFileNamePart = (value: string) =>
     value
@@ -539,7 +555,18 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
     }
 
     let finalCertUrl = certificateDriveUrl;
-    let finalMatUrl = materialDriveUrl;
+    const normalizedMaterialLink = normalizeMaterialUrl(materialDriveUrl);
+
+    if (!matFile && normalizedMaterialLink && !isValidMaterialUrl(normalizedMaterialLink)) {
+      alert('Tautan bahan materi belum valid. Gunakan tautan yang diawali http:// atau https://.');
+      return;
+    }
+
+    if (!matFile && normalizedMaterialLink !== materialDriveUrl) {
+      setMaterialDriveUrl(normalizedMaterialLink);
+    }
+
+    let finalMatUrl = normalizedMaterialLink;
 
     if (certFile && certStage !== 'completed' && certStage !== 'drive_uploaded') {
       try {
@@ -590,7 +617,11 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
         certificateDriveUrl: finalCertUrl,
         certificateFileName: certificateFileName || (certFile ? buildDriveFileName(certFile, 'certificate') : 'Sertifikat_Pelatihan.pdf'),
         materialDriveUrl: finalMatUrl,
-        materialFileName: materialFileName || (matFile ? buildDriveFileName(matFile, 'material') : 'Bahan_Materi.pdf'),
+        materialFileName: materialFileName || (matFile
+          ? buildDriveFileName(matFile, 'material')
+          : finalMatUrl
+            ? 'Tautan Bahan Materi'
+            : ''),
       });
       onClose();
     } catch (error: any) {
@@ -984,17 +1015,50 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
             </div>
           </div>
 
-          {/* Section 4: Upload Bahan Materi */}
+          {/* Section 4: Upload atau Tautan Bahan Materi */}
           <div className="space-y-3 bg-[#FAF9F6] p-4 rounded-2xl border border-[#E5E2D9]">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#B8860B] flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-[#B8860B]" /> 4. Upload Bahan Materi (PDF, PPT, DOC, XLS - Max 50 MB)
+                <BookOpen className="w-4 h-4 text-[#B8860B]" /> 4. Bahan Materi: Upload File atau Tautan
               </h4>
             </div>
 
-            <div>
-              <input
-                type="file"
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#2C3327] mb-1.5">
+                  Tautan Bahan Materi <span className="font-normal text-[#7A756D]">(Opsional)</span>
+                </label>
+                <div className="relative">
+                  <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B8860B]" />
+                  <input
+                    type="text"
+                    inputMode="url"
+                    value={materialDriveUrl}
+                    onChange={e => setMaterialDriveUrl(e.target.value)}
+                    onBlur={() => {
+                      if (!matFile && materialDriveUrl.trim()) {
+                        setMaterialDriveUrl(normalizeMaterialUrl(materialDriveUrl));
+                      }
+                    }}
+                    placeholder="Contoh: link Google Drive, Google Docs, Canva, YouTube, atau website"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#D9D5CB] bg-white text-xs text-[#2C3327] focus:outline-none focus:ring-2 focus:ring-[#B8860B]/30 focus:border-[#B8860B]"
+                  />
+                </div>
+                <p className="mt-1.5 text-[10px] leading-relaxed text-[#7A756D]">
+                  Isi kolom ini jika bahan materi tidak berupa file. Guru tetap dapat menyimpan arsip tanpa mengunggah materi. Jika file juga diunggah, tautan file Google Drive hasil upload akan digunakan sebagai tautan utama.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-[#E5E2D9]" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#9B958A]">atau upload file</span>
+                <div className="h-px flex-1 bg-[#E5E2D9]" />
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[10px] font-medium text-[#7A756D]">PDF, PPT, PPTX, DOC, DOCX, XLS, atau XLSX — maksimal 50 MB</p>
+                <input
+                  type="file"
                 accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx"
                 onChange={handleFileChangeMat}
                 className="w-full text-xs text-[#7A756D] file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#B8860B] file:text-white hover:file:bg-[#9a7008] cursor-pointer"
@@ -1100,15 +1164,16 @@ export const TrainingFormModal: React.FC<TrainingFormModalProps> = ({
                     <FileCheck className="w-4 h-4 text-emerald-600" /> Materi Terhubung
                   </span>
                   <a
-                    href={matWebViewLink || materialDriveUrl}
+                    href={matWebViewLink || normalizeMaterialUrl(materialDriveUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B8860B] text-white text-xs font-bold hover:bg-[#9a7008] transition-colors"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" /> Lihat File
+                    <ExternalLink className="w-3.5 h-3.5" /> Buka Materi
                   </a>
                 </div>
               )}
+              </div>
             </div>
           </div>
 
