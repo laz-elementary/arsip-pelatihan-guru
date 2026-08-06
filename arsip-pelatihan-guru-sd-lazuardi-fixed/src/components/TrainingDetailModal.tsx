@@ -167,7 +167,7 @@ export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
                   <span className="text-[10px] bg-[#E5E2D9] text-[#2C3327] font-bold px-2 py-0.5 rounded-md">Manajemen</span>
                 </div>
                 <p className="text-[11px] text-[#7A756D]">
-                  {record.materialFileName || 'Modul_Materi_Training.pdf'}
+                  {record.materialFileName || (record.materialDriveUrl ? 'Tautan Bahan Materi' : 'Belum ada bahan materi')}
                 </p>
               </div>
 
@@ -191,15 +191,21 @@ export const TrainingDetailModal: React.FC<TrainingDetailModalProps> = ({
                   </a>
                 )}
 
-                <a
-                  href={record.materialDriveUrl || DRIVE_FOLDERS.MATERIALS}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2 px-3 bg-[#1547a1] hover:bg-[#0f2857] text-white rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center space-x-2 shadow-xs"
-                >
-                  <span>Buka di Drive Bahan Materi</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                {record.materialDriveUrl ? (
+                  <a
+                    href={record.materialDriveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 bg-[#1547a1] hover:bg-[#0f2857] text-white rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center space-x-2 shadow-xs"
+                  >
+                    <span>Buka Bahan Materi</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ) : (
+                  <div className="w-full py-2 px-3 bg-[#F2EFE9] text-[#8B867D] rounded-xl text-xs font-semibold text-center border border-[#E5E2D9]">
+                    Belum ada file atau tautan materi
+                  </div>
+                )}
               </div>
             </div>
           </div>
