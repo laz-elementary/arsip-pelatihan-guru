@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Navbar } from './components/Navbar';
 import { DriveFolderBanner } from './components/DriveFolderBanner';
@@ -15,6 +15,31 @@ import { TeacherAnalytics } from './components/TeacherAnalytics';
 import { IntegrationStatusPage } from './components/IntegrationStatusPage';
 import { INITIAL_TEACHERS } from './data/initialData';
 import { Teacher, TrainingRecord, DRIVE_FOLDERS } from './types';
+
+type AppTab = 'dashboard' | 'list' | 'analytics' | 'integration';
+
+const TAB_PATHS: Record<AppTab, string> = {
+  dashboard: '/',
+  list: '/daftar-pelatihan',
+  analytics: '/analisis-guru',
+  integration: '/status-integrasi',
+};
+
+const PAGE_TITLES: Record<AppTab, string> = {
+  dashboard: 'Dashboard | Arsip Pelatihan Guru SD',
+  list: 'Daftar Pelatihan | Arsip Pelatihan Guru SD',
+  analytics: 'Analisis Guru | Arsip Pelatihan Guru SD',
+  integration: 'Status Integrasi | Arsip Pelatihan Guru SD',
+};
+
+const getTabFromPath = (pathname: string): AppTab => {
+  const normalizedPath = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const matchedEntry = (Object.entries(TAB_PATHS) as [AppTab, string][]).find(
+    ([, path]) => path === normalizedPath,
+  );
+
+  return matchedEntry?.[0] || 'dashboard';
+};
 
 export default function App() {
   // Persistence with localStorage
@@ -61,12 +86,50 @@ export default function App() {
   });
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'list' | 'analytics' | 'integration'>('dashboard');
+  const [activeTab, setActiveTabState] = useState<AppTab>(() => getTabFromPath(window.location.pathname));
+
+  const setActiveTab = useCallback((tab: AppTab) => {
+    const nextPath = TAB_PATHS[tab];
+
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ tab }, '', nextPath);
+    }
+
+    setActiveTabState(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<TrainingRecord | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<TrainingRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Keep the visible menu in sync with the browser URL, including Back/Forward.
+  useEffect(() => {
+    const syncTabWithUrl = () => {
+      const nextTab = getTabFromPath(window.location.pathname);
+      setActiveTabState(nextTab);
+      document.title = PAGE_TITLES[nextTab];
+    };
+
+    const currentTab = getTabFromPath(window.location.pathname);
+    const canonicalPath = TAB_PATHS[currentTab];
+
+    // Unknown paths return to the dashboard instead of leaving the app in an
+    // inconsistent state. Valid routes remain shareable and refresh-safe.
+    if (window.location.pathname !== canonicalPath) {
+      window.history.replaceState({ tab: currentTab }, '', canonicalPath);
+    }
+
+    syncTabWithUrl();
+    window.addEventListener('popstate', syncTabWithUrl);
+
+    return () => window.removeEventListener('popstate', syncTabWithUrl);
+  }, []);
+
+  useEffect(() => {
+    document.title = PAGE_TITLES[activeTab];
+  }, [activeTab]);
 
   // Sync state to localStorage
   useEffect(() => {
