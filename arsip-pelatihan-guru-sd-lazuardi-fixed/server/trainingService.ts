@@ -108,7 +108,10 @@ export async function upsertTraining(record: TrainingPayload) {
     .single();
 
   if (error) {
-    throw new Error(`Gagal menyimpan arsip pelatihan ke Supabase: ${error.message}`);
+    const detail = [error.code, error.message, error.details, error.hint]
+      .filter(Boolean)
+      .join(' | ');
+    throw new Error(`Gagal menyimpan arsip pelatihan ke Supabase: ${detail}`);
   }
 
   return fromDatabaseRow(data);
