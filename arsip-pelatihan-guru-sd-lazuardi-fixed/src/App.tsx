@@ -157,11 +157,13 @@ export default function App() {
       .then(records => {
         if (cancelled || !Array.isArray(records)) return;
 
-        // Do not erase an older local archive when the newly created Supabase
-        // table is still empty. The next edit/save will synchronize records.
-        if (records.length === 0 && trainings.length > 0) {
-          console.info('[Training Archive] Supabase masih kosong; cache lokal dipertahankan.');
-          return;
+        // Supabase is the source of truth. Keep a backup of any older local
+        // archive before replacing the UI with the shared database records.
+        if (trainings.length > 0) {
+          localStorage.setItem(
+            'lazuardi_trainings_local_backup',
+            JSON.stringify(trainings),
+          );
         }
 
         setTrainings(records);
@@ -198,15 +200,9 @@ export default function App() {
       createdAt: existingRecord?.createdAt || new Date().toISOString(),
     };
 
-    // Optimistic local save: the archive remains available even if Supabase is
-    // momentarily unavailable. The server response will replace it afterward.
-    setTrainings(prev => {
-      const exists = prev.some(item => item.id === targetId);
-      return exists
-        ? prev.map(item => item.id === targetId ? localRecord : item)
-        : [localRecord, ...prev];
-    });
-
+    // IMPORTANT: do not mark the archive as saved locally before Supabase
+    // confirms the write. This prevents a teacher from seeing a "saved"
+    // record that is actually missing from the shared database.
     try {
       const response = await fetch('/api/trainings', {
         method: 'POST',
@@ -220,32 +216,41 @@ export default function App() {
       }
 
       const savedRecord = data.record as TrainingRecord;
-      setTrainings(prev => prev.map(item => item.id === targetId ? savedRecord : item));
+      setTrainings(prev => {
+        const exists = prev.some(item => item.id === targetId);
+        return exists
+          ? prev.map(item => item.id === targetId ? savedRecord : item)
+          : [savedRecord, ...prev];
+      });
       showToast(existingRecord
         ? 'Data pelatihan berhasil diperbarui di Supabase!'
-        : 'Pelatihan guru berhasil diarsipkan ke Supabase & Google Drive!');
+        : 'Pelatihan guru berhasil diarsipkan ke database pusat!');
+      setEditingRecord(null);
+      return savedRecord;
     } catch (error: any) {
-      console.error('[Training Save] Supabase gagal, data disimpan lokal:', error?.message || error);
-      showToast(`Data tersimpan di perangkat ini, tetapi Supabase gagal: ${error?.message || 'periksa tabel trainings'}`);
+      console.error('[Training Save] Supabase gagal:', error?.message || error);
+      // Re-throw so TrainingFormModal keeps the form open and shows the real
+      // error instead of silently closing after only saving to localStorage.
+      throw new Error(
+        error?.message ||
+        'Data belum berhasil masuk ke database pusat. Form tetap terbuka; silakan coba simpan lagi.'
+      );
     }
-
-    setEditingRecord(null);
   };
 
   // Delete training
   const handleDeleteTraining = async (id: string) => {
-    setTrainings(prev => prev.filter(t => t.id !== id));
-
     try {
       const response = await fetch(`/api/trainings/${encodeURIComponent(id)}`, { method: 'DELETE' });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) {
         throw new Error(data?.message || 'Gagal menghapus data dari Supabase.');
       }
+      setTrainings(prev => prev.filter(t => t.id !== id));
       showToast('Data pelatihan dihapus dari arsip Supabase.');
     } catch (error: any) {
       console.error('[Training Delete] Supabase gagal:', error?.message || error);
-      showToast(`Data terhapus dari perangkat ini, tetapi Supabase gagal: ${error?.message || 'coba lagi'}`);
+      showToast(`Data belum dihapus karena database gagal: ${error?.message || 'coba lagi'}`);
     }
   };
 
