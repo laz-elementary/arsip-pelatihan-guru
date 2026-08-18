@@ -22,12 +22,33 @@ export interface TrainingPayload {
   createdAt?: string;
 }
 
+function normalizeSupabaseUrl(rawUrl: string) {
+  let url = rawUrl.trim().replace(/^['"]|['"]$/g, '').replace(/\/+$/, '');
+
+  // createClient() expects the project base URL, e.g.
+  // https://<project-ref>.supabase.co
+  // It appends /rest/v1 internally. Strip accidental Data API paths so
+  // SUPABASE_URL=https://...supabase.co/rest/v1 does not become
+  // /rest/v1/rest/v1 and trigger PGRST125.
+  url = url.replace(/\/rest\/v1(?:\/.*)?$/i, '');
+
+  return url;
+}
+
 function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
+  const rawSupabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!rawSupabaseUrl || !supabaseKey) {
     throw new Error('SUPABASE_URL atau SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi pada server.');
+  }
+
+  const supabaseUrl = normalizeSupabaseUrl(rawSupabaseUrl);
+
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
+    throw new Error(
+      'SUPABASE_URL tidak valid. Gunakan Project URL saja, contoh: https://xxxxxxxx.supabase.co (tanpa /rest/v1).'
+    );
   }
 
   return createClient(supabaseUrl, supabaseKey, {
